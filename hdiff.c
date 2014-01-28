@@ -284,15 +284,4 @@ int longSize(unsigned long long int number)
     return strlen(numSize);
 }
 
-bool search(uint8_t buffer[], char* searchTerm)
-{
-	for (int i = 0, s = strlen(searchTerm); i < s; s++)
-	{
-		if (buffer[i] != searchTerm[i])
-		{
-			return false;
-		}
-	}
-
-	return true;
-}	
+	
