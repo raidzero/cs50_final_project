@@ -19,7 +19,7 @@ node* LongList_Create(offset value)
    
 	head->value = value;
 	head->next = NULL;
-    
+	
 	return head;
 }
 
@@ -117,8 +117,13 @@ bool LongList_Contains(node** head, offset s)
 {
     node* selector = *head;
     node* prev = *head;
-    
-    //longlist_count(head, 1);
+	
+	if (selector->value == s)
+	{
+		return true;
+	}
+	
+    //LongList_Count(head, 1);
 	do 
 	{
 		prev = selector;
@@ -126,7 +131,7 @@ bool LongList_Contains(node** head, offset s)
 		{
 		    if (selector->value == s)
 		    {
-		        return true;
+				return true;
 		    }
 		}
 		selector = selector->next;	    

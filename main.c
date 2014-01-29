@@ -7,10 +7,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "LongList/LongList.h"
 #include "main.h"
 
 #define NORMAL "\033[0m"
 #define DIFFERS "\033[31m"
+#define SEARCHED "\033[32m"
+
+// global 
+bool search;
 
 int main(int argc, char* argv[])
 {
@@ -20,11 +25,22 @@ int main(int argc, char* argv[])
 		ErrPrint("Need at least two filenames!\n");
 	}
 	
+	char* searchTerm = "";
+	int bufferSize = 5;
+	
+	search = false;
 	char* filename1 = argv[1];
 	char* filename2 = argv[2];
+
 	
-	int bufferSize = 9;
-	
+	if (argc == 4)
+	{
+		search = true;
+		searchTerm = argv[3];
+		bufferSize = strlen(searchTerm);
+		printf("searchTerm: %s (%d chars)\n", searchTerm, bufferSize);
+	}
+		
 	// open up the two files
 	FILE* f1 = fopen(filename1, "rb");
 	FILE* f2 = fopen(filename2, "rb");
@@ -38,35 +54,49 @@ int main(int argc, char* argv[])
 	fseek(f1, 0, SEEK_END);
 	fseek(f2, 0, SEEK_END);
 
-	long long f1_size = ftell(f1);
-	long long f2_size = ftell(f2);
-		
+	offset f1_size = ftell(f1);
+	offset f2_size = ftell(f2);
+	
+	// rewind files
+	rewind(f1); rewind(f2);
+
+	// we need two lists for storing file offsets where found bytes live
+	// null so we can tell if its been created or not
+	node* f1_offsets = (node*) NULL;
+	node* f2_offsets = (node*) NULL;
+	
+	bool reading = true;
+	
+	if (search)
+	{
+		// check files
+		MarkOffsets(f1, &f1_offsets, searchTerm);
+		MarkOffsets(f2, &f2_offsets, searchTerm);
+	}
+	
 	// stack allocate for simplicity
 	byte f1_bytes[f1_size / bufferSize];
 	byte f2_bytes[f2_size / bufferSize];
 	
 	int offsetLen = f1_size > f2_size ? LongSize(f1_size) : LongSize(f1_size);
 	
-	// rewind files 
-	rewind(f1); rewind(f2);
-
 	// byte buffers
 	uint8_t buffer1[bufferSize];
 	uint8_t buffer2[bufferSize];
 
-	bool reading = true;
-
-	size_t b1_read, b2_read;
+	size_t b1_read, b2_read = 0;
 	
-	long long offset1 = 0, offset2 = 0;
-	long long longerOffset = 0;
-   	    
+	offset offset1 = 0, offset2 = 0;
+	offset longerOffset = 0;
+
+	reading = true;
+   	
 	while (reading)
 	{
 		// read bufferSize bytes from files
 		b1_read = fread(&buffer1, 1, bufferSize, f1);
 		b2_read = fread(&buffer2, 1, bufferSize, f2);
-	    	
+	    
 		if (b1_read > 0 || b2_read > 0)
 		{
 			// now compare the bytes in the buffer
@@ -80,15 +110,28 @@ int main(int argc, char* argv[])
 				b1.value = (uint8_t) buffer1[i];
 				b2.value = (uint8_t) buffer2[i];
 				
+				b1.byteStatus = normal;
+				b2.byteStatus = normal;
+
+				// check diff first
 				if (b1.value != b2.value || b1_read != b2_read)
 				{
-					b1.differs = true;
-					b2.differs = true;
+					b1.byteStatus = differs;
+					b2.byteStatus = differs;
 				}
-				else
+				
+				// now searched, color searched over diff
+				if (search)
 				{
-					b1.differs = false;
-					b2.differs = false;
+					if (LongList_Contains(&f1_offsets, offset1 + i))
+					{
+						b1.byteStatus = searched;
+					}
+					
+					if (LongList_Contains(&f2_offsets, offset2 + i))
+					{
+						b2.byteStatus = searched;
+					}
 				}
 				
 				f1_bytes[i] = b1;
@@ -111,6 +154,7 @@ int main(int argc, char* argv[])
 			{
 				PrintByte(f1_bytes[i], 0);
 			}
+			
 			// space pad?
 			if (b1_read < bufferSize)
 			{
@@ -127,6 +171,7 @@ int main(int argc, char* argv[])
 			{
 				PrintByte(f1_bytes[i], 1);
 			}
+			
 			// space pad?
 			if (b1_read < bufferSize)
 			{
@@ -141,6 +186,7 @@ int main(int argc, char* argv[])
 			{
 				PrintByte(f2_bytes[i], 0);
 			}
+			
 			// space pad?
 			if (b2_read < bufferSize)
 			{
@@ -164,6 +210,12 @@ int main(int argc, char* argv[])
 		}	
 	}
 	
+	if (search)
+	{
+		//LongList_Free(&f1_offsets);
+		//LongList_Free(&f2_offsets);
+	}
+
 	fclose(f1);
 	fclose(f2);
 		
@@ -187,49 +239,73 @@ void ErrPrint(char* s, ...)
 	exit(1);
 }
 
+
 void PrintByte(byte b, int ascii)
 {
 	char pad = '\0';
 	
 	if (ascii == 0) // hex
 	{
-		if (b.value <= 0xa)
+		if (b.value <= 0xf)
 		{
 			pad = '0';
 		}
-	
-		if (b.differs)
+		
+		switch (b.byteStatus)
 		{
-			StdPrint("%s%c%x ", DIFFERS, pad, b.value);
-			goto end;
+			case searched:
+				StdPrint("%s%c%x ", SEARCHED, pad, b.value);
+				break;
+			case differs:
+				StdPrint("%s%c%x ", DIFFERS, pad, b.value);
+				break;
+			case normal:
+				StdPrint("%s%c%x ", NORMAL, pad, b.value);
+				break;
 		}
 	
-		StdPrint("%s%c%x ", NORMAL, pad, b.value);
+		goto end;
 	}
 	else // ascii
 	{
-		if (!isupper(b.value) && 
-		!islower(b.value) && 
-		!isdigit(b.value) && 
+		// nonprintables?
+		if (!isprint(b.value) && 
 		b.value != ' ')
 		{
-			StdPrint("%c", '.');
+			switch (b.byteStatus)
+			{
+				case searched:
+					StdPrint("%s.", SEARCHED);
+					goto end;
+				case differs:
+					StdPrint("%s.", DIFFERS);
+					goto end;
+				case normal:
+					StdPrint("%s.", NORMAL);
+					break;
+			}
 			goto end;
 		}
-		if (b.value <= 0xa)
+
+		if (b.value <= 0xf)
 		{
 			pad = ' ';
 		}
-	
-		if (b.differs)
-		{
-			StdPrint("%s%c%c", DIFFERS, pad, (char) b.value);
-			goto end;
-		}
-	
-		StdPrint("%s%c%c", NORMAL, pad, (char) b.value);
 		
+		switch (b.byteStatus)
+		{
+			case searched:
+				StdPrint("%s%c%c", SEARCHED, pad, (char) b.value);
+				goto end;
+			case differs:
+				StdPrint("%s%c%c", DIFFERS, pad, (char) b.value);
+				goto end;
+			case normal:
+				StdPrint("%s%c%c", NORMAL, pad, (char) b.value);
+				goto end;
+		}		
 	}
+
 	end:
 	StdPrint("%s", NORMAL);
 }
@@ -271,10 +347,10 @@ int LongSize(unsigned long long int number)
     return strlen(numSize);
 }
 
-bool search(uint8_t buffer[], char* searchTerm)
+bool SearchBytes(uint8_t buffer[], char* searchTerm)
 {
-	for (int i = 0, s = strlen(searchTerm); i < s; s++)
-	{
+	for (int i = 0, s = strlen(searchTerm); i < s; i++)
+	{		
 		if (buffer[i] != searchTerm[i])
 		{
 			return false;
@@ -282,4 +358,55 @@ bool search(uint8_t buffer[], char* searchTerm)
 	}
 
 	return true;
-}	
+}
+
+void MarkOffsets(FILE* fp, node** list, char* searchTerm)
+{
+	size_t sRead; 
+	size_t bufferSize = strlen(searchTerm);
+
+	uint8_t searchBuffer[bufferSize];
+	offset searchOffset = 0;
+		
+	//printf("Searching file...\n");
+	
+	bool reading = true;
+	
+	// read f1 bufferSize bytes at a time
+	while (reading)
+	{
+		sRead = fread(&searchBuffer, 1, bufferSize, fp);
+		//printf("Read %zu bytes...\n", sRead);
+		
+		if (sRead == bufferSize)
+		{
+			//printf("checking...\n");
+			// we read enough bytes. let's see if this matches
+			if (SearchBytes(searchBuffer, searchTerm))
+			{
+				// save the offsets in this word in the file
+				for (int i = 0; i < sRead; i++)
+				{
+					if (*list != NULL)
+					{
+						LongList_Append(list, searchOffset + i);
+					}
+					else
+					{
+						*list = LongList_Create(searchOffset + i);
+					}
+				}
+				//LongList_Count(list, 1);
+			}
+		}
+
+		searchOffset += sRead;
+		if (sRead == 0)
+		{
+			// no more bytes to read
+			reading = false;
+		}
+	}
+
+	rewind(fp);
+}
