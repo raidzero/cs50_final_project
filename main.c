@@ -7,27 +7,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct byte
-{
-	uint8_t value;
-	bool differs;
-} byte;
+#include "main.h"
 
 #define NORMAL "\033[0m"
 #define DIFFERS "\033[31m"
-
-void stdprint(char* s, ...);
-void errprint(char* s, ...);
-void printByte(byte, int ascii);
-char* padOffset(long, int);
-int longSize(unsigned long long int);
 
 int main(int argc, char* argv[])
 {
 	// check for args
 	if (argc < 3)
 	{
-		errprint("Need at least two filenames!\n");
+		ErrPrint("Need at least two filenames!\n");
 	}
 	
 	char* filename1 = argv[1];
@@ -41,7 +31,7 @@ int main(int argc, char* argv[])
 	
 	if (f1 == NULL || f2 == NULL)
 	{
-		errprint("File error!\n");
+		ErrPrint("File error!\n");
 	}
 
 	// how long is each file?
@@ -55,7 +45,7 @@ int main(int argc, char* argv[])
 	byte f1_bytes[f1_size / bufferSize];
 	byte f2_bytes[f2_size / bufferSize];
 	
-	int offsetLen = f1_size > f2_size ? longSize(f1_size) : longSize(f1_size);
+	int offsetLen = f1_size > f2_size ? LongSize(f1_size) : LongSize(f1_size);
 	
 	// rewind files 
 	rewind(f1); rewind(f2);
@@ -76,9 +66,6 @@ int main(int argc, char* argv[])
 		// read bufferSize bytes from files
 		b1_read = fread(&buffer1, 1, bufferSize, f1);
 		b2_read = fread(&buffer2, 1, bufferSize, f2);
-			
-		// this is a list of pointers to bytes
-
 	    	
 		if (b1_read > 0 || b2_read > 0)
 		{
@@ -112,7 +99,7 @@ int main(int argc, char* argv[])
 			longerOffset = offset1 > offset2 ? offset1: offset2;
 			
 			// pad offset and print it
-			char* paddedOffset = padOffset(longerOffset, offsetLen);
+			char* paddedOffset = PadOffset(longerOffset, offsetLen);
 			fprintf(stdout, "0x0%s | ", paddedOffset);
 			free(paddedOffset);
 			
@@ -122,7 +109,7 @@ int main(int argc, char* argv[])
 			// now print the bytes hex
 			for (i = 0; i < b1_read; i++)
 			{
-				printByte(f1_bytes[i], 0);
+				PrintByte(f1_bytes[i], 0);
 			}
 			// space pad?
 			if (b1_read < bufferSize)
@@ -138,7 +125,7 @@ int main(int argc, char* argv[])
 			// now print the bytes ascii
 			for (i = 0; i < b1_read; i++)
 			{
-				printByte(f1_bytes[i], 1);
+				PrintByte(f1_bytes[i], 1);
 			}
 			// space pad?
 			if (b1_read < bufferSize)
@@ -152,7 +139,7 @@ int main(int argc, char* argv[])
 			printf(" |-| ");
 			for (i = 0; i < b2_read; i++)
 			{
-				printByte(f2_bytes[i], 0);
+				PrintByte(f2_bytes[i], 0);
 			}
 			// space pad?
 			if (b2_read < bufferSize)
@@ -166,7 +153,7 @@ int main(int argc, char* argv[])
 			printf("| ");
 			for (i = 0; i < b2_read; i++)
 			{
-				printByte(f2_bytes[i], 1);
+				PrintByte(f2_bytes[i], 1);
 			}
 
 			printf("\n");
@@ -183,7 +170,7 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void stdprint(char* s, ...)
+void StdPrint(char* s, ...)
 {
 	va_list args;
 	va_start(args, s);
@@ -191,7 +178,7 @@ void stdprint(char* s, ...)
 	vfprintf(stdout, s, args);
 }
 
-void errprint(char* s, ...)
+void ErrPrint(char* s, ...)
 {
 	va_list args;
 	va_start(args, s);
@@ -200,7 +187,7 @@ void errprint(char* s, ...)
 	exit(1);
 }
 
-void printByte(byte b, int ascii)
+void PrintByte(byte b, int ascii)
 {
 	char pad = '\0';
 	
@@ -213,11 +200,11 @@ void printByte(byte b, int ascii)
 	
 		if (b.differs)
 		{
-			stdprint("%s%c%x ", DIFFERS, pad, b.value);
+			StdPrint("%s%c%x ", DIFFERS, pad, b.value);
 			goto end;
 		}
 	
-		stdprint("%s%c%x ", NORMAL, pad, b.value);
+		StdPrint("%s%c%x ", NORMAL, pad, b.value);
 	}
 	else // ascii
 	{
@@ -226,7 +213,7 @@ void printByte(byte b, int ascii)
 		!isdigit(b.value) && 
 		b.value != ' ')
 		{
-			stdprint("%c", '.');
+			StdPrint("%c", '.');
 			goto end;
 		}
 		if (b.value <= 0xa)
@@ -236,20 +223,20 @@ void printByte(byte b, int ascii)
 	
 		if (b.differs)
 		{
-			stdprint("%s%c%c", DIFFERS, pad, (char) b.value);
+			StdPrint("%s%c%c", DIFFERS, pad, (char) b.value);
 			goto end;
 		}
 	
-		stdprint("%s%c%c", NORMAL, pad, (char) b.value);
+		StdPrint("%s%c%c", NORMAL, pad, (char) b.value);
 		
 	}
 	end:
-	stdprint("%s", NORMAL);
+	StdPrint("%s", NORMAL);
 }
 
-char* padOffset(long offset, int size)
+char* PadOffset(long offset, int size)
 {
-	int offsetSize = longSize(offset);
+	int offsetSize = LongSize(offset);
 
 	char chrOffset[offsetSize];
 	sprintf(chrOffset, "%lx", offset);
@@ -275,7 +262,7 @@ char* padOffset(long offset, int size)
 	return result;
 }
 
-int longSize(unsigned long long int number)
+int LongSize(unsigned long long int number)
 {
     char numSize[512];
     
