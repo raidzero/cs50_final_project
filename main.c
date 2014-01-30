@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 		search = true;
 		searchTerm = argv[3];
 		//int sLen = strlen(searchTerm);
-		bufferSize = strlen(searchTerm);
+		//bufferSize = strlen(searchTerm);
 		printf("searchTerm: %s (%d chars)\n", searchTerm, bufferSize);
 	}
 		
@@ -76,9 +76,9 @@ int main(int argc, char* argv[])
 	}
 	
 	// stack allocate for simplicity
-	byte f1_bytes[f1_size / bufferSize];
-	byte f2_bytes[f2_size / bufferSize];
-	
+	byte f1_bytes[bufferSize];
+	byte f2_bytes[bufferSize];
+
 	int offsetLen = f1_size > f2_size ? LongSize(f1_size) : LongSize(f1_size);
 	
 	// byte buffers
