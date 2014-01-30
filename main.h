@@ -14,4 +14,4 @@ void PrintByte(byte, int);
 char* PadOffset(long, int);
 int LongSize(unsigned long long int);
 bool SearchBytes(uint8_t[], char*);
-void MarkOffsets(FILE*, node**, char*);
+void MarkOffsets(FILE*, offset size, node**, char*);
