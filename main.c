@@ -37,9 +37,8 @@ int main(int argc, char* argv[])
 	{
 		search = true;
 		searchTerm = argv[3];
-		//int sLen = strlen(searchTerm);
-		//bufferSize = strlen(searchTerm);
-		printf("searchTerm: %s (%d chars)\n", searchTerm, bufferSize);
+		int sLen = strlen(searchTerm);
+		printf("searchTerm: %s (%d chars)\n", searchTerm, sLen);
 	}
 		
 	// open up the two files
