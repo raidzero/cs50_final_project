@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 
 #include "LongList/LongList.h"
 #include "main.h"
@@ -22,21 +23,39 @@ int main(int argc, char* argv[])
 	// check for args
 	if (argc < 3)
 	{
-		ErrPrint("Need at least two filenames!\n");
+		ErrPrint("USAGE: %s FILE1 FILE2 [-as ASCIISEARCH] [-c COLUMNS]\n", argv[0]);
 	}
 	
 	char* searchTerm = "";
-	int bufferSize = 12;
+	int bufferSize = 0;
 	
 	search = false;
+	
+	
 	char* filename1 = argv[1];
 	char* filename2 = argv[2];
-
 	
-	if (argc == 4)
+	// loop over arguments passed, starting at argv[3] - after filenames
+	for (int i = 3; i < argc; i++)
+	{
+		printf("checking \"%s\"\n", argv[i]);
+		if (strcmp(argv[i], "-c") == 0)
+		{
+			bufferSize = atoi(argv[++i]);
+			printf("yes: bufferSize: %d\n", bufferSize);
+			continue;
+		}
+		if (strcmp(argv[i], "-as") ==0)
+		{
+			searchTerm = argv[++i];
+			printf("yes: searchTerm: %s\n", searchTerm);
+			continue;
+		}
+	}
+	
+	if (strlen(searchTerm) > 0)
 	{
 		search = true;
-		searchTerm = argv[3];
 		int sLen = strlen(searchTerm);
 		printf("searchTerm: %s (%d chars)\n", searchTerm, sLen);
 	}
@@ -57,8 +76,28 @@ int main(int argc, char* argv[])
 	offset f1_size = ftell(f1);
 	offset f2_size = ftell(f2);
 	
+	int offsetLen = f1_size > f2_size ? LongSize(f1_size) : LongSize(f1_size);
+
 	// rewind files
 	rewind(f1); rewind(f2);
+
+	// determine current window size - if it hasnt been specified already
+	struct winsize ws;
+
+	if (bufferSize == 0)
+	{
+		if (!ioctl(1, TIOCGWINSZ, &ws)) // thanks to the ioctl UNIX docs
+		{
+			// divide by 4 for each file, so lets go with 8
+			bufferSize = (ws.ws_col / 8 - offsetLen);
+		}
+		else
+		{
+			bufferSize = 12;
+		}
+	}
+
+	//bufferSize = 12;
 
 	// we need two lists for storing file offsets where found bytes live
 	// null so we can tell if its been created or not
@@ -77,8 +116,6 @@ int main(int argc, char* argv[])
 	// stack allocate for simplicity
 	byte f1_bytes[bufferSize];
 	byte f2_bytes[bufferSize];
-
-	int offsetLen = f1_size > f2_size ? LongSize(f1_size) : LongSize(f1_size);
 	
 	// byte buffers
 	uint8_t buffer1[bufferSize];
