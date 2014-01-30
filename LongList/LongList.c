@@ -93,7 +93,7 @@ void LongList_Append(node** head, offset value)
 }
 
 // frees all pointers in a list, from end to start
-void LongList_free(node** head)
+void LongList_Free(node** head)
 {
 	// set up intermediate pointers
 	node* selector = *head;

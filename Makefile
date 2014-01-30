@@ -22,3 +22,4 @@ $(OBJS): Makefile
 clean:
 	rm -f core $(EXE) *.o
 	rm -rf *.dSYM
+	rm -f LongList/*.o

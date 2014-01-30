@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 	}
 	
 	char* searchTerm = "";
-	int bufferSize = 5;
+	int bufferSize = 12;
 	
 	search = false;
 	char* filename1 = argv[1];
@@ -37,6 +37,7 @@ int main(int argc, char* argv[])
 	{
 		search = true;
 		searchTerm = argv[3];
+		//int sLen = strlen(searchTerm);
 		bufferSize = strlen(searchTerm);
 		printf("searchTerm: %s (%d chars)\n", searchTerm, bufferSize);
 	}
@@ -70,8 +71,8 @@ int main(int argc, char* argv[])
 	if (search)
 	{
 		// check files
-		MarkOffsets(f1, &f1_offsets, searchTerm);
-		MarkOffsets(f2, &f2_offsets, searchTerm);
+		MarkOffsets(f1, f1_size, &f1_offsets, searchTerm);
+		MarkOffsets(f2, f2_size, &f2_offsets, searchTerm);
 	}
 	
 	// stack allocate for simplicity
@@ -212,8 +213,8 @@ int main(int argc, char* argv[])
 	
 	if (search)
 	{
-		//LongList_Free(&f1_offsets);
-		//LongList_Free(&f2_offsets);
+		LongList_Free(&f1_offsets);
+		LongList_Free(&f2_offsets);
 	}
 
 	fclose(f1);
@@ -360,51 +361,52 @@ bool SearchBytes(uint8_t buffer[], char* searchTerm)
 	return true;
 }
 
-void MarkOffsets(FILE* fp, node** list, char* searchTerm)
+void MarkOffsets(FILE* fp, offset size, node** list, char* searchTerm)
 {
-	size_t sRead; 
-	size_t bufferSize = strlen(searchTerm);
+	rewind(fp);
 
-	uint8_t searchBuffer[bufferSize];
-	offset searchOffset = 0;
-		
-	//printf("Searching file...\n");
-	
-	bool reading = true;
-	
-	// read f1 bufferSize bytes at a time
-	while (reading)
+	size_t sLen = strlen(searchTerm);
+	size_t bytesRead = 0;
+	//offset searchOffset = 0;
+	// search buffer
+	uint8_t searchBuffer[sLen];
+
+	// iterate over each offset in file
+	for (offset loc = 0; loc < size; loc++)
 	{
-		sRead = fread(&searchBuffer, 1, bufferSize, fp);
-		//printf("Read %zu bytes...\n", sRead);
-		
-		if (sRead == bufferSize)
+		// move to loc in file
+		fseek(fp, loc, SEEK_SET);
+
+		// read a chunk of data from the file the size of what we are looking for
+		bytesRead = fread(&searchBuffer, 1, sLen, fp);
+		if (bytesRead == sLen)
 		{
-			//printf("checking...\n");
-			// we read enough bytes. let's see if this matches
+			// compare this chunk
 			if (SearchBytes(searchBuffer, searchTerm))
 			{
 				// save the offsets in this word in the file
-				for (int i = 0; i < sRead; i++)
+				for (int count = 0; count < bytesRead; count++)
 				{
+					offset foundLoc = loc + count;
+
 					if (*list != NULL)
 					{
-						LongList_Append(list, searchOffset + i);
+						LongList_Append(list, foundLoc);
 					}
 					else
 					{
-						*list = LongList_Create(searchOffset + i);
+						*list = LongList_Create(foundLoc);
 					}
 				}
-				//LongList_Count(list, 1);
+
+				// move forward in file
+				loc += bytesRead;
 			}
 		}
-
-		searchOffset += sRead;
-		if (sRead == 0)
+		else 
 		{
-			// no more bytes to read
-			reading = false;
+			// not enough bytes read
+			break;
 		}
 	}
 
