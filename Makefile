@@ -16,6 +16,7 @@ OBJS = $(SRC_FILES:.c=.o)
 $(EXE): $(OBJS) Makefile
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 	rm *.o
+	rm LongList/*.o
 
 $(OBJS): Makefile
 
