@@ -30,25 +30,21 @@ int main(int argc, char* argv[])
 	int bufferSize = 0;
 	
 	search = false;
-	
-	
+		
 	char* filename1 = argv[1];
 	char* filename2 = argv[2];
 	
 	// loop over arguments passed, starting at argv[3] - after filenames
 	for (int i = 3; i < argc; i++)
 	{
-		printf("checking \"%s\"\n", argv[i]);
 		if (strcmp(argv[i], "-c") == 0)
 		{
 			bufferSize = atoi(argv[++i]);
-			printf("yes: bufferSize: %d\n", bufferSize);
 			continue;
 		}
 		if (strcmp(argv[i], "-as") ==0)
 		{
 			searchTerm = argv[++i];
-			printf("yes: searchTerm: %s\n", searchTerm);
 			continue;
 		}
 	}
@@ -93,11 +89,10 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
+			// could not read terminal size. Just go with 12
 			bufferSize = 12;
 		}
 	}
-
-	//bufferSize = 12;
 
 	// we need two lists for storing file offsets where found bytes live
 	// null so we can tell if its been created or not
@@ -127,7 +122,7 @@ int main(int argc, char* argv[])
 	offset longerOffset = 0;
 
 	reading = true;
-   	
+	
 	while (reading)
 	{
 		// read bufferSize bytes from files
@@ -147,16 +142,29 @@ int main(int argc, char* argv[])
 				b1.value = (uint8_t) buffer1[i];
 				b2.value = (uint8_t) buffer2[i];
 				
-				b1.byteStatus = normal;
-				b2.byteStatus = normal;
-
 				// check diff first
-				if (b1.value != b2.value || b1_read != b2_read)
+				if (b1.value != b2.value)
 				{
 					b1.byteStatus = differs;
 					b2.byteStatus = differs;
 				}
+				else
+				{
+					b1.byteStatus = normal;
+					b2.byteStatus = normal;
+				}
 				
+				// have we passed one of the file's boundaries?
+				if (offset1 > f2_size)
+				{
+					b1.byteStatus = differs;
+				}
+
+				if (offset2 > f1_size)
+				{
+					b2.byteStatus = differs;
+				}
+
 				// now searched, color searched over diff
 				if (search)
 				{
