@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "LongList.h"
 
@@ -40,13 +39,20 @@ int LongList_Count(node** head, int print)
 		prev = selector;
 		count++;
 
-		if (print == 1)
+		if (print == 1 && selector != NULL)
 		{
 			printf("%d: 0x%llx\n", count, selector->value);
 		}
 		
 		// update selector to point the next node
-		selector = selector->next;
+		if (selector)
+		{
+			selector = selector->next;
+		}
+		else
+		{
+			break;
+		}
 	}
 	while (prev->next != NULL);
 
@@ -108,36 +114,52 @@ void LongList_Free(node** head)
 		{
 		    free(prev);
 		}
-		selector = selector->next;
+		if (selector != NULL)
+		{
+			selector = selector->next;
+		}
 	}    	
 	while (selector != NULL);
 }
 
 bool LongList_Contains(node** head, offset s)
 {
-    node* selector = *head;
+    //printf("Searching for %llu...\n", s);
+	//LongList_Count(head, 1);
+
+	node* selector = *head;
     node* prev = *head;
-	
-	if (selector->value == s)
+
+	/*
+	if (selector != NULL && selector->value == s)
 	{
 		return true;
 	}
+	*/
 	
-    //LongList_Count(head, 1);
 	do 
 	{
 		prev = selector;
-		if (prev != NULL && selector->value)
+		if (prev != NULL)
 		{
 		    if (selector->value == s)
 		    {
+				//printf("yes\n");
 				return true;
 		    }
 		}
-		selector = selector->next;	    
+		if (selector)
+		{
+			selector = selector->next;
+		}
+		else
+		{
+			break;
+		}
 	}    	
 	while (selector != NULL);
     
+	//printf("no\n");
     return false;
 }
 
