@@ -9,14 +9,17 @@
 #include <sys/ioctl.h>
 
 #include "LongList/LongList.h"
+#include "ByteArray/ByteArray.h"
+
 #include "main.h"
 
 #define NORMAL "\033[0m"
 #define DIFFERS "\033[31m"
 #define SEARCHED "\033[32m"
 
-// global 
+// globals 
 bool search;
+typedef enum {hexSearch, asciiSearch} enum_searchType;
 
 int main(int argc, char* argv[])
 {
@@ -27,6 +30,9 @@ int main(int argc, char* argv[])
 	}
 	
 	char* searchTerm = "";
+	byteArray* searchBytes;
+	enum_searchType searchType;
+
 	int bufferSize = 0;
 	
 	search = false;
@@ -37,23 +43,38 @@ int main(int argc, char* argv[])
 	// loop over arguments passed, starting at argv[3] - after filenames
 	for (int i = 3; i < argc; i++)
 	{
-		if (strcmp(argv[i], "-c") == 0)
+		if (strcmp(argv[i], "-c") ==  0)
 		{
 			bufferSize = atoi(argv[++i]);
 			continue;
 		}
-		if (strcmp(argv[i], "-as") ==0)
+		if (strcmp(argv[i], "-as") == 0)
 		{
 			searchTerm = argv[++i];
+			searchType = asciiSearch;
+			continue;
+		}
+		if (strcmp(argv[i], "-bs") == 0)
+		{
+			searchTerm = argv[++i];
+			searchType = hexSearch;
 			continue;
 		}
 	}
-	
+
 	if (strlen(searchTerm) > 0)
 	{
 		search = true;
-		int sLen = strlen(searchTerm);
-		printf("searchTerm: %s (%d chars)\n", searchTerm, sLen);
+		if (searchType == asciiSearch)
+		{
+			searchBytes = SplitBytes(searchTerm, ascii);
+		}
+		else if (searchType == hexSearch)
+		{
+			searchBytes = SplitBytes(searchTerm, hex);
+		}
+		printf("searchTerm: \"%s\" (%zu bytes)\n", searchTerm, searchBytes->size);
+		
 	}
 		
 	// open up the two files
@@ -63,6 +84,15 @@ int main(int argc, char* argv[])
 	if (f1 == NULL || f2 == NULL)
 	{
 		ErrPrint("File error!\n");
+		
+		if (f1)
+		{
+			fclose(f1);
+		}
+		if (f2)
+		{
+			fclose(f2);
+		}
 	}
 
 	// how long is each file?
@@ -104,8 +134,8 @@ int main(int argc, char* argv[])
 	if (search)
 	{
 		// check files
-		MarkOffsets(f1, f1_size, &f1_offsets, searchTerm);
-		MarkOffsets(f2, f2_size, &f2_offsets, searchTerm);
+		MarkOffsets(f1, f1_size, &f1_offsets, searchBytes);
+		MarkOffsets(f2, f2_size, &f2_offsets, searchBytes);
 	}
 	
 	// stack allocate for simplicity
@@ -166,15 +196,20 @@ int main(int argc, char* argv[])
 				}
 
 				// now searched, color searched over diff
+				
 				if (search)
 				{
+					//printf("checking f1: %llu\n", offset1 + i);
 					if (LongList_Contains(&f1_offsets, offset1 + i))
 					{
+						//printf("f1, hello\n");
 						b1.byteStatus = searched;
 					}
 					
+					//printf("checking f2: %llu\n", offset2 + i);
 					if (LongList_Contains(&f2_offsets, offset2 + i))
 					{
+						//printf("f2, hello\n");
 						b2.byteStatus = searched;
 					}
 				}
@@ -255,6 +290,10 @@ int main(int argc, char* argv[])
 		}	
 	}
 	
+	if (searchBytes)
+	{
+		ByteArray_Free(searchBytes);
+	}
 	if (search)
 	{
 		LongList_Free(&f1_offsets);
@@ -392,26 +431,27 @@ int LongSize(unsigned long long int number)
     return strlen(numSize);
 }
 
-bool SearchBytes(uint8_t buffer[], char* searchTerm)
+bool SearchBytes(uint8_t buffer[], byteArray* searchBytes)
 {
-	for (int i = 0, s = strlen(searchTerm); i < s; i++)
+	for (int i = 0, s = searchBytes->size; i < s; i++)
 	{		
-		if (buffer[i] != searchTerm[i])
+		if (buffer[i] != searchBytes->value[i])
 		{
 			return false;
 		}
 	}
-
 	return true;
 }
 
-void MarkOffsets(FILE* fp, offset size, node** list, char* searchTerm)
+void MarkOffsets(FILE* fp, offset size, node** list, byteArray* searchBytes)
 {
+	//printf("Marking\n============================\n");
 	rewind(fp);
 
-	size_t sLen = strlen(searchTerm);
+	size_t sLen = searchBytes->size;
+
 	size_t bytesRead = 0;
-	//offset searchOffset = 0;
+	
 	// search buffer
 	uint8_t searchBuffer[sLen];
 
@@ -426,7 +466,7 @@ void MarkOffsets(FILE* fp, offset size, node** list, char* searchTerm)
 		if (bytesRead == sLen)
 		{
 			// compare this chunk
-			if (SearchBytes(searchBuffer, searchTerm))
+			if (SearchBytes(searchBuffer, searchBytes))
 			{
 				// save the offsets in this word in the file
 				for (int count = 0; count < bytesRead; count++)
@@ -435,10 +475,12 @@ void MarkOffsets(FILE* fp, offset size, node** list, char* searchTerm)
 
 					if (*list != NULL)
 					{
+						//printf("Saved offset %llu in existing list\n", foundLoc);
 						LongList_Append(list, foundLoc);
 					}
 					else
 					{
+						//printf("Saved offset %llu in new list\n", foundLoc);
 						*list = LongList_Create(foundLoc);
 					}
 				}
@@ -454,5 +496,6 @@ void MarkOffsets(FILE* fp, offset size, node** list, char* searchTerm)
 		}
 	}
 
+	//printf("============================\nDone\n");
 	rewind(fp);
 }
