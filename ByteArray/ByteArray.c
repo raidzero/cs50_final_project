@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "ByteArray.h"
+#include "../helpers.h"
 
 #define DEBUG 0
 
@@ -33,7 +34,7 @@ byteArray* SplitBytes(char* input, splitType type)
 		byteArray* hexResult = malloc(sizeof(byteArray));
 
 		// work on a copy since strtok mangles input
-		char* s = strdup(input);
+		char* s = StringDup(input);
 		
 		// how many spaces are in the input?
 		int numSpaces = 0;
@@ -56,7 +57,7 @@ byteArray* SplitBytes(char* input, splitType type)
 		int i = 0; 
 		
 		// now tokenize again storing each byte in hexValue
-		s = strdup(input);
+		s = StringDup(input);
 		
 		// printf("tokenizing \"%s\"...\n", s);
 		tok = strtok(s, " ");

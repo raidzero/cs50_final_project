@@ -6,9 +6,10 @@ else
 	CC = gcc
 endif
 
-CFLAGS = -ggdb3 -O0 -std=c99 -Wall
+CFLAGS = -ggdb3 -O0 -std=c99 -Wall -Werror
 EXE = hdiff
 SRC_FILES = main.c \
+            helpers.c \
 			LongList/LongList.c \
 			ByteArray/ByteArray.c
 
