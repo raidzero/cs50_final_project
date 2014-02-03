@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 	
 	char* searchTerm = "";
 	byteArray* searchBytes;
-	enum_searchType searchType;
+	enum_searchType searchType = asciiSearch;
 
 	int bufferSize = 0;
 	
@@ -65,13 +65,13 @@ int main(int argc, char* argv[])
 	if (strlen(searchTerm) > 0)
 	{
 		search = true;
-		if (searchType == asciiSearch)
-		{
-			searchBytes = SplitBytes(searchTerm, ascii);
-		}
-		else if (searchType == hexSearch)
+		if (searchType == hexSearch)
 		{
 			searchBytes = SplitBytes(searchTerm, hex);
+		}
+		else
+		{
+			searchBytes = SplitBytes(searchTerm, ascii);
 		}
 		printf("searchTerm: \"%s\" (%zu bytes)\n", searchTerm, searchBytes->size);
 		
