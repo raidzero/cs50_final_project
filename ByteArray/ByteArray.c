@@ -52,7 +52,7 @@ byteArray* SplitBytes(char* input, splitType type)
 		free(s);
 		// printf("%d bytes found!\n", numSpaces);
 
-		uint8_t* hexValue = malloc(numSpaces * sizeof(uint8_t));
+		uint8_t* hexValue = malloc(numSpaces * sizeof(uint8_t*));
 		
 		int i = 0; 
 		
