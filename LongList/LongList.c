@@ -103,23 +103,14 @@ void LongList_Free(node** head)
 {
 	// set up intermediate pointers
 	node* selector = *head;
-	node* prev = *head;
+	node* next = *head;
 
-	// loop through, freeing the previous and moving to next 
-	do 
+	while (selector != NULL)
 	{
-		prev = selector;
-		// printf("freeing %p\n", prev);	
-		if (prev != NULL)
-		{
-		    free(prev);
-		}
-		if (selector != NULL)
-		{
-			selector = selector->next;
-		}
-	}    	
-	while (selector != NULL);
+		next = selector->next;
+		free(selector);
+		selector = next;
+	}
 }
 
 bool LongList_Contains(node** head, offset s)
