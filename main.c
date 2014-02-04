@@ -402,7 +402,7 @@ char* PadOffset(long offset, int size)
 	sprintf(chrOffset, "%lx", offset);
 
 	// alloc mem for result
-	char* result = malloc((2 + size) * sizeof(char));
+	char* result = malloc(size + 1 * sizeof(char));
 	
 	// positions in result & chrOffset
 	int i, j, k = 0; 
