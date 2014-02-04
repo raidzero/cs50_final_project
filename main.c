@@ -418,6 +418,9 @@ char* PadOffset(long offset, int size)
 	{
 		result[i] = '0';
 	}
+	
+	// all strings need null terminators or they dont go to heaven
+	result[size] = '\0';
 
 	return result;
 }
