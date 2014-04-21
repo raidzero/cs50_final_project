@@ -14,7 +14,7 @@ hasn't, it used the winsize struct to determine the number of columns in the
 terminal. This is the number of bytes searched at once. 
 If a search term has been passed, two linked lists containing file
 offsets are created. The lists will store the offsets in each file where the
-search term has been found. The offsets of the file will also be displayed the
+search term has been found. The offsets of the file will also be displayed to the
 left of each file in their own column. The longer offset is used to determine
 the amount of padding for the output. 
 
