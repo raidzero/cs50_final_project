@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 	// check for args
 	if (argc < 3)
 	{
-		ErrPrint("USAGE: %s FILE1 FILE2 [-as ASCIISEARCH] [-c COLUMNS]\n", argv[0]);
+		ErrPrint("USAGE: %s FILE1 FILE2 [-as|bs ASCIISEARCH|BINARYSEARSH] [-c COLUMNS]\n", argv[0]);
 	}
 	
 	char* searchTerm = "";
@@ -116,6 +116,12 @@ int main(int argc, char* argv[])
 		{
 			// divide by 4 for each file, so lets go with 8
 			bufferSize = (ws.ws_col / 8 - offsetLen);
+
+			// odd number of columns? subtract by one
+			if (ws.ws_col % 2 != 0)
+			{
+				bufferSize--;
+			}
 		}
 		else
 		{

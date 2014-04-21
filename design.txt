@@ -1,0 +1,32 @@
+cs50_final_project
+==================
+
+I have always wanted a quick tool to do binary comparison on files, while
+still having an ascii and a binary search function with automatic resizing based on terminal
+width. This utility fixes that. It can handle files of any size without eating
+up very much RAM.
+
+The data structures the program uses: Linked List, "ByteArray" (used to split
+an ascii or binary string into an array of bytes).
+
+It achieves this by first determining if the width has been passed. If it
+hasn't, it used the winsize struct to determine the number of columns in the
+terminal. This is the number of bytes searched at once. 
+If a search term has been passed, two linked lists containing file
+offsets are created. The lists will store the offsets in each file where the
+search term has been found. The offsets of the file will also be displayed the
+left of each file in their own column. The longer offset is used to determine
+the amount of padding for the output. 
+
+To find the differences in the files, it reads each file N bytes at a time,
+where N is the buffer size determined from the terminal width. It then
+compares each byte per chunk and if they differ, it marks the byte as
+different. A "byte" is a struct that contains the byte's value and an enum for
+its status (different, searched, normal). Once the row of bytes has been
+processed for each file, the program prints them out. The PrintByte function prints a 
+single byte in either ascii or hex format and in the appropriate color using
+escape sequences. 
+
+Once printing is complete, it frees any linked lists used and closes the file. 
+
+I am happy to report no memory leaks or any other memory-related issues!
