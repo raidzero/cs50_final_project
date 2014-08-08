@@ -11,3 +11,6 @@ Will print files side by side, differences shown in red.
 Auto-detects terminal size if COLUMNS is not passed. 
 Optional Searched word shown in green.
 Identical bytes shown in white. 
+
+
+Demo video: http://www.youtube.com/watch?v=pFXSb8AWU14
